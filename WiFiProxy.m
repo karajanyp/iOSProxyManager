@@ -80,4 +80,70 @@
 		CFRelease(prefRef);
 }
 
+- (void)setSocksProxy:(NSString *)ipaddr port:(NSUInteger)port on:(BOOL)on;
+{
+	SCPreferencesRef prefRef = SCPreferencesCreate(NULL, CFSTR("test_proxy"), NULL);
+
+	SCPreferencesLock(prefRef, true);
+
+    CFStringRef currentSetPath = SCPreferencesGetValue(prefRef, kSCPrefCurrentSet);
+	DDLog(@"current set key path = %@", cfs2nss(currentSetPath));
+
+	//Get current active network configuration
+    NSDictionary *currentSet = (__bridge NSDictionary *)SCPreferencesPathGetValue(prefRef, currentSetPath);
+   	if (currentSet) {
+
+   		NSDictionary *currentSetServices = currentSet[cfs2nss(kSCCompNetwork)][cfs2nss(kSCCompService)];
+   		DDLog(@"current set services: %@", currentSetServices);
+
+	    NSDictionary *services = (__bridge NSDictionary *)SCPreferencesGetValue(prefRef, kSCPrefNetworkServices);
+	    DDLog(@"services = %@", services);
+
+	    NSString *wifiServiceKey = nil;
+	    for (NSString *key in currentSetServices) {
+	   		NSDictionary *service = services[key];
+	   		NSString *name = service[cfs2nss(kSCPropUserDefinedName)];
+	   		DDLog(@"network service name: %@", name);
+	   		if (service && [@"Wi-Fi" isEqualToString: name]) {
+	   			wifiServiceKey = key;
+	   			break;
+	   		}
+	    }
+
+	    if (wifiServiceKey) {
+	    	DDLog(@"Find target servcie: %@", wifiServiceKey);
+		 	NSData *data = 
+			[NSPropertyListSerialization dataWithPropertyList:services
+	                                             format:NSPropertyListBinaryFormat_v1_0
+	                                             options:0
+	                                        	   error:nil];
+	 		NSMutableDictionary *nservices =
+	 		[NSPropertyListSerialization propertyListWithData:data
+	                                  		   options:NSPropertyListMutableContainersAndLeaves
+	                                            format:NULL
+	                                  			 error:nil];
+		    NSMutableDictionary *proxies = nservices[wifiServiceKey][(__bridge NSString *)kSCEntNetProxies];
+		    
+		    if (on)
+		    {    
+			    [proxies setObject:@(1) forKey:cfs2nss(kSCPropNetProxiesSOCKSEnable)];
+			   	[proxies setObject:ipaddr forKey:cfs2nss(kSCPropNetProxiesSOCKSProxy)];
+			   	[proxies setObject:@(port) forKey:cfs2nss(kSCPropNetProxiesSOCKSPort)];
+		   } else {
+		   	    [proxies removeAllObjects];
+		   }
+
+		    SCPreferencesSetValue(prefRef, kSCPrefNetworkServices, (__bridge CFPropertyListRef)nservices);
+		    SCPreferencesCommitChanges(prefRef);
+		    SCPreferencesApplyChanges(prefRef);
+	    } else {
+	    	DDLog(@"Does not find target service");
+	    }
+   	} else {
+   		DDLog(@"Does not find set for set key:%@", currentSetPath);
+   	}
+	SCPreferencesUnlock(prefRef);
+	CFRelease(prefRef);
+}
+
 @end
