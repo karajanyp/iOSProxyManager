@@ -6,6 +6,6 @@
 
 - (void)setProxy:(NSString *)ipaddr port:(NSUInteger)port;
 
-- (void)setSocksProxy:(NSString *)ipaddr port:(NSUInteger)port on:(BOOL)on;
+- (void)setProxy:(NSString *)ipaddr port:(NSUInteger)port mode:(int)mode;
 
 @end
