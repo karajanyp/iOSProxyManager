@@ -80,7 +80,7 @@
 		CFRelease(prefRef);
 }
 
-- (void)setSocksProxy:(NSString *)ipaddr port:(NSUInteger)port on:(BOOL)on;
+- (void)setProxy:(NSString *)ipaddr port:(NSUInteger)port mode:(int)mode;
 {
 	SCPreferencesRef prefRef = SCPreferencesCreate(NULL, CFSTR("test_proxy"), NULL);
 
@@ -124,12 +124,24 @@
 	                                  			 error:nil];
 		    NSMutableDictionary *proxies = nservices[wifiServiceKey][(__bridge NSString *)kSCEntNetProxies];
 		    
-		    if (on)
+		    if (mode == 2)
 		    {    
 			    [proxies setObject:@(1) forKey:cfs2nss(kSCPropNetProxiesSOCKSEnable)];
 			   	[proxies setObject:ipaddr forKey:cfs2nss(kSCPropNetProxiesSOCKSProxy)];
 			   	[proxies setObject:@(port) forKey:cfs2nss(kSCPropNetProxiesSOCKSPort)];
-		   } else {
+
+			   	[proxies setObject:@(0) forKey:cfs2nss(kSCPropNetProxiesHTTPEnable)];
+			   	[proxies setObject:@(0) forKey:cfs2nss(kSCPropNetProxiesHTTPSEnable)];
+		   } else if (mode == 1) {
+		   		[proxies setObject:@(1) forKey:cfs2nss(kSCPropNetProxiesHTTPEnable)];
+                [proxies setObject:ipaddr forKey:cfs2nss(kSCPropNetProxiesHTTPProxy)];
+                [proxies setObject:@(port) forKey:cfs2nss(kSCPropNetProxiesHTTPPort)];
+                [proxies setObject:@(1) forKey:cfs2nss(kSCPropNetProxiesHTTPSEnable)];
+                [proxies setObject:ipaddr forKey:cfs2nss(kSCPropNetProxiesHTTPSProxy)];
+                [proxies setObject:@(port) forKey:cfs2nss(kSCPropNetProxiesHTTPSPort)];
+
+                [proxies setObject:@(0) forKey:cfs2nss(kSCPropNetProxiesSOCKSEnable)];
+		   }else {
 		   	    [proxies removeAllObjects];
 		   }
 
